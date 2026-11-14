@@ -928,6 +928,28 @@ def score_0_to_100(series, higher_is_better=True):
 
 # ==========================================
 
+def format_minmax_score_calculation(value, eligible_values, higher_is_better=True):
+    """Return the exact 0–100 min–max calculation shown in the UI."""
+    values = pd.to_numeric(eligible_values, errors="coerce").fillna(0)
+    low = float(values.min())
+    high = float(values.max())
+    value = float(value)
+
+    if high == low:
+        return "all eligible values are equal; score = 50.00"
+
+    scaled = (value - low) / (high - low) * 100
+    if higher_is_better:
+        return (
+            f"({value:.3f} − {low:.3f}) ÷ ({high:.3f} − {low:.3f}) "
+            f"× 100 = {scaled:.2f}"
+        )
+    return (
+        f"100 − [({value:.3f} − {low:.3f}) ÷ ({high:.3f} − {low:.3f}) "
+        f"× 100] = {100 - scaled:.2f}"
+    )
+
+
 # BATTER PERFORMANCE ANALYSIS
 
 # ==========================================
@@ -2448,11 +2470,33 @@ with tab1:
 
 
                 st.caption(
+                    "The comparison cohort is every batter passing eligibility "
+                    "in the currently selected dataset filters."
+                )
 
-                    "The 0–100 scaling is relative to eligible batters "
-
-                    "in the currently selected dataset."
-
+                st.write(
+                    "Strike-rate score calculation: "
+                    + format_minmax_score_calculation(
+                        player["weighted_sr"],
+                        batting_results["weighted_sr"],
+                        higher_is_better=True,
+                    )
+                )
+                st.write(
+                    "Boundary score calculation: "
+                    + format_minmax_score_calculation(
+                        player["weighted_boundary"],
+                        batting_results["weighted_boundary"],
+                        higher_is_better=True,
+                    )
+                )
+                st.write(
+                    "Dismissal score calculation: "
+                    + format_minmax_score_calculation(
+                        player["weighted_dismissal_rate"],
+                        batting_results["weighted_dismissal_rate"],
+                        higher_is_better=False,
+                    )
                 )
 
 
@@ -2727,9 +2771,39 @@ with tab2:
 
 
 
+                st.markdown("**2. Base performance metrics**")
+
+                st.write(
+                    f"Pressure economy = {player['pressure_runs']:.0f} ÷ "
+                    f"{player['pressure_balls']:.0f} legal balls × 6 "
+                    f"= **{player['pressure_economy']:.3f}**"
+                )
+                st.write(
+                    f"Normal economy = {player['normal_runs']:.0f} ÷ "
+                    f"{player['normal_balls']:.0f} legal balls × 6 "
+                    f"= **{player['normal_economy']:.3f}**"
+                )
+                st.write(
+                    f"Pressure wickets per 100 balls = "
+                    f"{player['pressure_wickets']:.0f} ÷ "
+                    f"{player['pressure_balls']:.0f} × 100 "
+                    f"= **{player['pressure_wickets_per_100']:.3f}**"
+                )
+                st.write(
+                    f"Normal wickets per 100 balls = "
+                    f"{player['normal_wickets']:.0f} ÷ "
+                    f"{player['normal_balls']:.0f} × 100 "
+                    f"= **{player['normal_wickets_per_100']:.3f}**"
+                )
+                st.write(
+                    "Dot-ball percentage = legal dot balls ÷ legal balls × 100; "
+                    f"pressure **{player['pressure_dot_percentage']:.3f}%**, "
+                    f"normal **{player['normal_dot_percentage']:.3f}%**"
+                )
+
                 st.markdown(
 
-                    "**2. Pressure-weighted statistics "
+                    "**3. Pressure-weighted statistics "
 
                     "(70% pressure + 30% normal)**"
 
@@ -2779,7 +2853,7 @@ with tab2:
 
                 st.markdown(
 
-                    "**3. Convert each statistic to a comparable 0–100 score**"
+                    "**4. Convert each statistic to a comparable 0–100 score**"
 
                 )
 
@@ -2819,9 +2893,34 @@ with tab2:
 
                 )
 
+                st.write(
+                    "Economy score calculation: "
+                    + format_minmax_score_calculation(
+                        player["weighted_economy"],
+                        bowling_results["weighted_economy"],
+                        higher_is_better=False,
+                    )
+                )
+                st.write(
+                    "Wicket-rate score calculation: "
+                    + format_minmax_score_calculation(
+                        player["weighted_wickets_per_100"],
+                        bowling_results["weighted_wickets_per_100"],
+                        higher_is_better=True,
+                    )
+                )
+                st.write(
+                    "Dot-ball score calculation: "
+                    + format_minmax_score_calculation(
+                        player["weighted_dot_percentage"],
+                        bowling_results["weighted_dot_percentage"],
+                        higher_is_better=True,
+                    )
+                )
 
 
-                st.markdown("**4. Raw rating**")
+
+                st.markdown("**5. Raw rating**")
 
 
 
@@ -2845,7 +2944,7 @@ with tab2:
 
 
 
-                st.markdown("**5. Confidence calculation**")
+                st.markdown("**6. Confidence calculation**")
 
 
 
@@ -2861,7 +2960,7 @@ with tab2:
 
                     f"= {player['pressure_balls']:.0f} / "
 
-                    f"{player['normal_balls']:.0f}"
+                    f"({player['pressure_balls']:.0f} + {player['normal_balls']:.0f})"
 
                 )
 
@@ -2875,7 +2974,7 @@ with tab2:
 
 
 
-                st.markdown("**6. Final reliability rating**")
+                st.markdown("**7. Final reliability rating**")
 
 
 
